@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Currency Converter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+
+    .converter {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 360px;
+      transition: transform 0.3s ease;
+    }
+
+    .converter:hover {
+      transform: scale(1.02);
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      color: #222;
+      font-weight: 600;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    input, select {
+      background: #f4f4f4;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      background: #e8f0fe;
+      border: 1px solid #4a90e2;
+    }
+
+    button {
+      background: linear-gradient(90deg, #4a90e2, #357abd);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #357abd, #4a90e2);
+      transform: translateY(-2px);
+    }
+
+    #reverse {
+      background: linear-gradient(90deg, #34a853, #2c8b46);
+    }
+
+    #reverse:hover {
+      background: linear-gradient(90deg, #2c8b46, #34a853);
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #111;
+      background: #e9f5ff;
+      padding: 10px;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .flag {
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="converter">
+    <h1>💱 Modern Currency Converter</h1>
+    <input type="number" id="amount" placeholder="Enter amount">
+    <select id="from"></select>
+    <button id="convert">Convert to INR</button>
+    <button id="reverse">🔁 Reverse Conversion</button>
+    <h2 id="result"></h2>
+  </div>
+
+  <script>
+    const from = document.getElementById('from');
+    const amount = document.getElementById('amount');
+    const result = document.getElementById('result');
+    const convertBtn = document.getElementById('convert');
+    const reverseBtn = document.getElementById('reverse');
+
+    let toINR = true;
+
+    const flagMap = {
+      USD: '🇺🇸', INR: '🇮🇳', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵', CNY: '🇨🇳',
+      AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', SGD: '🇸🇬', NZD: '🇳🇿', RUB: '🇷🇺'
+    };
+
+    // Load currency list
+    fetch('https://api.exchangerate-api.com/v4/latest/USD')
+      .then(res => res.json())
+      .then(data => {
+        const currencies = Object.keys(data.rates);
+        currencies.forEach(code => {
+          const flag = flagMap[code] || '🏳️';
+          from.innerHTML += `<option value="${code}">${flag} ${code}</option>`;
+        });
+        from.value = 'USD';
+      });
+
+    // Function to convert
+    function convertCurrency() {
+      const fromCurr = from.value;
+      const amt = amount.value;
+      const base = toINR ? fromCurr : 'INR';
+      const target = toINR ? 'INR' : fromCurr;
+
+      if (!amt || amt <= 0) {
+        result.textContent = 'Please enter a valid amount';
+        return;
+      }
+
+      fetch(`https://api.exchangerate-api.com/v4/latest/${base}`)
+        .then(res => res.json())
+        .then(data => {
+          const rate = data.rates[target];
+          const converted = (amt * rate).toFixed(2);
+          const flagBase = flagMap[base] || '🏳️';
+          const flagTarget = flagMap[target] || '🏳️';
+          result.textContent = toINR
+            ? `${flagBase} ${amt} ${fromCurr} = ${flagTarget} ${converted} INR`
+            : `${flagBase} ${amt} INR = ${flagTarget} ${converted} ${fromCurr}`;
+        })
+        .catch(() => {
+          result.textContent = 'Error fetching data. Try again later.';
+        });
+    }
+
+    // Auto convert on typing
+    amount.addEventListener('input', () => {
+      if (amount.value) convertCurrency();
+    });
+
+    convertBtn.addEventListener('click', convertCurrency);
+
+    reverseBtn.addEventListener('click', () => {
+      toINR = !toINR;
+      convertBtn.textContent = toINR ? 'Convert to INR' : 'Convert from INR';
+      result.textContent = '';
+      convertCurrency();
+    });
+  </script>
+</body>
+</html>
